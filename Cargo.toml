@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 extism-pdk = "1.2.1"
 prost = "0.13.2"
-hank-types = { path = "../../../hank-rust-types" }
+hank-types = { path = "../hank-rust-types" }
