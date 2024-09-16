@@ -1,9 +1,15 @@
 [package]
-name = "hank-rust-pdk"
+name = "hank-pdk"
+description = "A Rust plugin development kit for Hank"
+license = "MIT"
+homepage = "https://hank.chat"
+repository = "https://github.com/hankchat/hank-rust-pdk"
+readme = "README.md"
+keywords = ["hank", "chat", "bot", "chatbot", "pdk"]
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 extism-pdk = "1.2.1"
+hank-types = "0.1.0"
 prost = "0.13.2"
-hank-types = { path = "../hank-rust-types" }
