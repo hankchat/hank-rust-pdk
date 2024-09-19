@@ -1,10 +1,10 @@
 use extism_pdk::{host_fn, Prost};
-use hank_types::cron::CronJob;
+use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
 use hank_types::{
-    CronInput, CronOutput, DbQueryInput, DbQueryOutput, ReactInput, ReactOutput, SendMessageInput,
-    SendMessageOutput,
+    CronInput, CronOutput, DbQueryInput, DbQueryOutput, OneShotInput, OneShotOutput, ReactInput,
+    ReactOutput, SendMessageInput, SendMessageOutput,
 };
 
 #[host_fn]
@@ -13,6 +13,7 @@ extern "ExtismHost" {
     pub fn react(input: Prost<ReactInput>) -> Prost<ReactOutput>;
     pub fn db_query(input: Prost<DbQueryInput>) -> Prost<DbQueryOutput>;
     pub fn cron(input: Prost<CronInput>) -> Prost<CronOutput>;
+    pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
 }
 
 pub struct Hank;
@@ -55,5 +56,13 @@ impl Hank {
         };
 
         let _ = unsafe { cron(Prost(input)) };
+    }
+
+    pub fn one_shot(oneshot: OneShotJob) {
+        let input = OneShotInput {
+            one_shot_job: Some(oneshot),
+        };
+
+        let _ = unsafe { one_shot(Prost(input)) };
     }
 }
