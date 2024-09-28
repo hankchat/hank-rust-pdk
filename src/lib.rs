@@ -168,7 +168,7 @@ pub fn initialize() -> FnResult<()> {
 
 /// Wrapper for Access Check shorthands.
 #[derive(Default, Debug)]
-enum AccessChecks {
+pub enum AccessChecks {
     #[default]
     None,
     Array(Vec<AccessCheck>),
@@ -178,7 +178,7 @@ enum AccessChecks {
 
 /// Wrapper for Metadata protobuf that's more user friendly.
 #[derive(Default, Debug)]
-struct PluginMetadata<'a> {
+pub struct PluginMetadata<'a> {
     /// The plguins name.
     pub name: &'a str,
     /// A short description of the plugin.
