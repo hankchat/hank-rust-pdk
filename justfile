@@ -15,6 +15,8 @@ alias e := edit
     $EDITOR "{{ justfile() }}"
 
 publish version="patch":
-    cargo bump -g {{ version }}
-    cargo publish
-    git push --follow-tags
+    cargo release version patch --no-confirm --execute
+    cargo release commit --no-confirm --execute
+    cargo release tag --no-confirm --execute
+    cargo release push --no-confirm --execute
+    cargo release publish --no-confirm --execute
