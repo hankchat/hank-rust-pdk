@@ -15,7 +15,7 @@ alias e := edit
     $EDITOR "{{ justfile() }}"
 
 publish version="patch":
-    cargo release version patch --no-confirm --execute
+    cargo release version {{ version }} --no-confirm --execute
     cargo release commit --no-confirm --execute
     cargo release tag --no-confirm --execute
     cargo release push --no-confirm --execute
