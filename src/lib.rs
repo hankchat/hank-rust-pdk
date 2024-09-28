@@ -3,10 +3,10 @@ use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperato
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
-use hank_types::plugin::Metadata;
+use hank_types::plugin::{EscalatedPrivilege, Metadata};
 use hank_types::{
     CronInput, CronOutput, DbQueryInput, DbQueryOutput, OneShotInput, OneShotOutput, ReactInput,
-    ReactOutput, SendMessageInput, SendMessageOutput,
+    ReactOutput, ReloadPluginInput, ReloadPluginOutput, SendMessageInput, SendMessageOutput,
 };
 use std::sync::OnceLock;
 
@@ -17,6 +17,7 @@ extern "ExtismHost" {
     pub fn db_query(input: Prost<DbQueryInput>) -> Prost<DbQueryOutput>;
     pub fn cron(input: Prost<CronInput>) -> Prost<CronOutput>;
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
+    pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
 }
 
 #[derive(Default, Debug)]
@@ -120,6 +121,15 @@ impl Hank {
 
         let _ = unsafe { one_shot(Prost(input)) };
     }
+
+    // Escalated privileges necessary for use.
+    pub fn reload_plugin(plugin: impl Into<String>) {
+        let input = ReloadPluginInput {
+            plugin: plugin.into(),
+        };
+
+        let _ = unsafe { reload_plugin(Prost(input)) };
+    }
 }
 
 static HANK: OnceLock<Hank> = OnceLock::new();
@@ -194,6 +204,11 @@ pub struct PluginMetadata<'a> {
     ///
     /// All functionality of this plugin can optionally be gated by accses checks.
     pub access_checks: AccessChecks,
+    /// A secret escalation key that grants this plugin specific escalated
+    /// privileges.
+    pub escalation_key: &'a str,
+    /// A list of escalated privileges that this plugin requests to use.
+    pub escalated_privileges: Vec<EscalatedPrivilege>,
 }
 
 impl From<PluginMetadata<'_>> for Metadata {
@@ -217,6 +232,12 @@ impl From<PluginMetadata<'_>> for Metadata {
                 }),
                 Full(full) => Some(full),
             },
+            escalation_key: value.escalation_key.into(),
+            escalated_privileges: value
+                .escalated_privileges
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }
