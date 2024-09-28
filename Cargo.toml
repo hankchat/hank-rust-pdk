@@ -9,6 +9,9 @@ keywords = ["hank", "chat", "bot", "chatbot", "pdk"]
 version = "0.1.2"
 edition = "2021"
 
+[package.metadata.release]
+pre-release-commit-message = "Release"
+
 [dependencies]
 extism-pdk = "1.2.1"
 hank-types = "0.1.0"
