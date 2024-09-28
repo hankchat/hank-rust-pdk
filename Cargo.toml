@@ -10,7 +10,7 @@ version = "0.1.2"
 edition = "2021"
 
 [package.metadata.release]
-pre-release-commit-message = "Release"
+pre-release-commit-message = "Release {{crate_name}} version {{version}}"
 
 [dependencies]
 extism-pdk = "1.2.1"
