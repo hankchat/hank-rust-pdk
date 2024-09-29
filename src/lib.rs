@@ -95,6 +95,7 @@ impl Hank {
         let _ = unsafe { react(Prost(input)) };
     }
 
+    // @TODO make this generic
     pub fn db_query(statement: PreparedStatement) -> Results {
         let input = DbQueryInput {
             prepared_statement: Some(statement),
