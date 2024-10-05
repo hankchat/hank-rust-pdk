@@ -26,7 +26,7 @@ pub struct Hank {
     install_handler: Option<fn()>,
     initialize_handler: Option<fn()>,
     message_handler: Option<fn(message: Message)>,
-    command_handler: Option<fn(command: Message)>,
+    command_handler: Option<fn(command: String)>,
 }
 
 impl Hank {
@@ -65,11 +65,11 @@ impl Hank {
         self.message_handler = Some(handler);
     }
 
-    pub fn command_handler(&self) -> Option<fn(command: Message)> {
+    pub fn command_handler(&self) -> Option<fn(command: String)> {
         self.command_handler
     }
 
-    pub fn register_command_handler(&mut self, handler: fn(command: Message)) {
+    pub fn register_command_handler(&mut self, handler: fn(command: String)) {
         self.command_handler = Some(handler);
     }
 
@@ -136,7 +136,7 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-pub fn handle_command(Prost(message): Prost<Message>) -> FnResult<()> {
+pub fn handle_command(Prost(message): Prost<String>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     if let Some(handler) = hank.command_handler() {
         handler(message);
