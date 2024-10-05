@@ -1,9 +1,9 @@
-use extism_pdk::{host_fn, plugin_fn, FnResult, FromBytes, Prost};
+use extism_pdk::{host_fn, plugin_fn, FnResult, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
-use hank_types::plugin::{Argument, Command, EscalatedPrivilege, Metadata};
+use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
 use hank_types::{
     CronInput, CronOutput, DbQueryInput, DbQueryOutput, OneShotInput, OneShotOutput, ReactInput,
     ReactOutput, ReloadPluginInput, ReloadPluginOutput, SendMessageInput, SendMessageOutput,
@@ -26,7 +26,7 @@ pub struct Hank {
     install_handler: Option<fn()>,
     initialize_handler: Option<fn()>,
     message_handler: Option<fn(message: Message)>,
-    command_handler: Option<fn(command: String)>,
+    command_handler: Option<fn(command: CommandContext)>,
 }
 
 impl Hank {
@@ -65,11 +65,11 @@ impl Hank {
         self.message_handler = Some(handler);
     }
 
-    pub fn command_handler(&self) -> Option<fn(command: String)> {
+    pub fn command_handler(&self) -> Option<fn(context: CommandContext)> {
         self.command_handler
     }
 
-    pub fn register_command_handler(&mut self, handler: fn(command: String)) {
+    pub fn register_command_handler(&mut self, handler: fn(context: CommandContext)) {
         self.command_handler = Some(handler);
     }
 
@@ -136,11 +136,10 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-pub fn handle_command(message: Vec<u8>) -> FnResult<()> {
-    let message = String::from_bytes(&message).unwrap();
+pub fn handle_command(Prost(context): Prost<CommandContext>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     if let Some(handler) = hank.command_handler() {
-        handler(message);
+        handler(context);
     }
 
     Ok(())
