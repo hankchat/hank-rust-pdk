@@ -3,7 +3,7 @@ use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperato
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
-use hank_types::plugin::{EscalatedPrivilege, Metadata};
+use hank_types::plugin::{Argument, Command, EscalatedPrivilege, Metadata};
 use hank_types::{
     CronInput, CronOutput, DbQueryInput, DbQueryOutput, OneShotInput, OneShotOutput, ReactInput,
     ReactOutput, ReloadPluginInput, ReloadPluginOutput, SendMessageInput, SendMessageOutput,
@@ -207,9 +207,23 @@ pub struct PluginMetadata<'a> {
     pub access_checks: AccessChecks,
     /// A secret escalation key that grants this plugin specific escalated
     /// privileges.
-    pub escalation_key: &'a str,
+    pub escalation_key: Option<&'a str>,
     /// A list of escalated privileges that this plugin requests to use.
     pub escalated_privileges: Vec<EscalatedPrivilege>,
+    /// The author of the plugin.
+    pub author: &'a str,
+    /// Whether or not this plugin handles commands.
+    pub handles_commands: bool,
+    /// Whether or not this plugin handles messages.
+    pub handles_messages: bool,
+    /// Optionally override the plugin command name.
+    pub command_name: Option<&'a str>,
+    /// Optional aliases for the plugin command.
+    pub aliases: Vec<&'a str>,
+    /// Arguments for the plugin command.
+    pub arguments: Vec<Argument>,
+    /// Plugin subcommands.
+    pub subcommands: Vec<Command>,
 }
 
 impl From<PluginMetadata<'_>> for Metadata {
@@ -233,12 +247,19 @@ impl From<PluginMetadata<'_>> for Metadata {
                 }),
                 Full(full) => Some(full),
             },
-            escalation_key: value.escalation_key.into(),
+            escalation_key: value.escalation_key.map(String::from),
             escalated_privileges: value
                 .escalated_privileges
                 .into_iter()
-                .map(Into::into)
+                .map(i32::from)
                 .collect(),
+            author: value.author.into(),
+            handles_commands: value.handles_commands,
+            handles_messages: value.handles_messages,
+            command_name: value.command_name.map(String::from),
+            aliases: value.aliases.into_iter().map(String::from).collect(),
+            arguments: value.arguments,
+            subcommands: value.subcommands,
         }
     }
 }
