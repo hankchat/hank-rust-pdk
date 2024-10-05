@@ -26,7 +26,7 @@ pub struct Hank {
     install_handler: Option<fn()>,
     initialize_handler: Option<fn()>,
     message_handler: Option<fn(message: Message)>,
-    command_handler: Option<fn(command: CommandContext)>,
+    chat_command_handler: Option<fn(context: CommandContext)>,
 }
 
 impl Hank {
@@ -65,12 +65,12 @@ impl Hank {
         self.message_handler = Some(handler);
     }
 
-    pub fn command_handler(&self) -> Option<fn(context: CommandContext)> {
-        self.command_handler
+    pub fn chat_command_handler(&self) -> Option<fn(context: CommandContext)> {
+        self.chat_command_handler
     }
 
-    pub fn register_command_handler(&mut self, handler: fn(context: CommandContext)) {
-        self.command_handler = Some(handler);
+    pub fn register_chat_command_handler(&mut self, handler: fn(context: CommandContext)) {
+        self.chat_command_handler = Some(handler);
     }
 
     pub fn start(self) -> FnResult<()> {
@@ -136,14 +136,20 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-pub fn handle_command(Prost(context): Prost<CommandContext>) -> FnResult<()> {
+// Temporary
+pub fn handle_command(context: Prost<CommandContext>) -> FnResult<()> {
+    handle_chat_command(context)
+}
+
+pub fn handle_chat_command(Prost(context): Prost<CommandContext>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
-    if let Some(handler) = hank.command_handler() {
+    if let Some(handler) = hank.chat_command_handler() {
         handler(context);
     }
 
     Ok(())
 }
+
 #[plugin_fn]
 pub fn handle_message(Prost(message): Prost<Message>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
