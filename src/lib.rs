@@ -1,4 +1,4 @@
-use extism_pdk::{host_fn, plugin_fn, FnResult, Prost};
+use extism_pdk::{host_fn, plugin_fn, FnResult, FromBytes, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::{PreparedStatement, Results};
@@ -136,7 +136,8 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-pub fn handle_command(Prost(message): Prost<String>) -> FnResult<()> {
+pub fn handle_command(message: Vec<u8>) -> FnResult<()> {
+    let message = String::from_bytes(&message).unwrap();
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     if let Some(handler) = hank.command_handler() {
         handler(message);
