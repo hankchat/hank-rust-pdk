@@ -138,10 +138,11 @@ impl Hank {
     }
 
     // Escalated privileges necessary for use.
-    pub fn load_plugin(url: impl Into<String>) {
+    pub fn load_plugin(url: impl Into<String>) -> Result<Metadata, extism_pdk::Error> {
         let input = LoadPluginInput { url: url.into() };
 
-        let _ = unsafe { load_plugin(Prost(input)) };
+        unsafe { load_plugin(Prost(input)) }
+            .map(|Prost(LoadPluginOutput { metadata })| metadata.expect("ok result"))
     }
 }
 
