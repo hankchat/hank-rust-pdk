@@ -5,9 +5,9 @@ use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
 use hank_types::{
-    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput, OneShotInput,
-    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
-    SendMessageInput, SendMessageOutput,
+    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput, LoadPluginInput,
+    LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput,
+    ReloadPluginOutput, SendMessageInput, SendMessageOutput,
 };
 use std::sync::OnceLock;
 
@@ -19,6 +19,7 @@ extern "ExtismHost" {
     pub fn cron(input: Prost<CronInput>) -> Prost<CronOutput>;
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
     pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
+    pub fn load_plugin(input: Prost<LoadPluginInput>) -> Prost<LoadPluginOutput>;
 }
 
 #[derive(Default, Debug)]
@@ -135,6 +136,13 @@ impl Hank {
 
         let _ = unsafe { reload_plugin(Prost(input)) };
     }
+
+    // Escalated privileges necessary for use.
+    pub fn load_plugin(url: impl Into<String>) {
+        let input = LoadPluginInput { url: url.into() };
+
+        let _ = unsafe { load_plugin(Prost(input)) };
+    }
 }
 
 static HANK: OnceLock<Hank> = OnceLock::new();
@@ -237,6 +245,10 @@ pub struct PluginMetadata<'a> {
     pub arguments: Vec<Argument>,
     /// Plugin subcommands.
     pub subcommands: Vec<Command>,
+    /// Hosts that this plugin requests permissions to access via HTTP.
+    pub allowed_hosts: Vec<String>,
+    /// Pool size this plugin requests.
+    pub pool_size: Option<i32>,
 }
 
 impl From<PluginMetadata<'_>> for Metadata {
@@ -273,6 +285,8 @@ impl From<PluginMetadata<'_>> for Metadata {
             aliases: value.aliases.into_iter().map(String::from).collect(),
             arguments: value.arguments,
             subcommands: value.subcommands,
+            allowed_hosts: value.allowed_hosts,
+            pool_size: value.pool_size,
         }
     }
 }
