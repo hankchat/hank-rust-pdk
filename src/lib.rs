@@ -136,16 +136,10 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-// Temporary
-pub fn handle_command(context: Prost<CommandContext>) -> FnResult<()> {
-    handle_chat_command(context)
-}
-
 pub fn handle_chat_command(Prost(context): Prost<CommandContext>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
-    if let Some(handler) = hank.chat_command_handler() {
-        handler(context);
-    }
+
+    hank.chat_command_handler().map(|handler| handler(context));
 
     Ok(())
 }
@@ -153,17 +147,18 @@ pub fn handle_chat_command(Prost(context): Prost<CommandContext>) -> FnResult<()
 #[plugin_fn]
 pub fn handle_message(Prost(message): Prost<Message>) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
-    if let Some(handler) = hank.message_handler() {
-        handler(message);
-    }
+
+    hank.message_handler().map(|handler| handler(message));
 
     Ok(())
 }
+
 #[plugin_fn]
 pub fn get_metadata() -> FnResult<Prost<Metadata>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     Ok(Prost(hank.metadata()))
 }
+
 #[plugin_fn]
 pub fn install() -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
@@ -173,6 +168,7 @@ pub fn install() -> FnResult<()> {
 
     Ok(())
 }
+
 #[plugin_fn]
 pub fn initialize() -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
