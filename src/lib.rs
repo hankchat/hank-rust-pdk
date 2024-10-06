@@ -5,8 +5,9 @@ use hank_types::database::{PreparedStatement, Results};
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
 use hank_types::{
-    CronInput, CronOutput, DbQueryInput, DbQueryOutput, OneShotInput, OneShotOutput, ReactInput,
-    ReactOutput, ReloadPluginInput, ReloadPluginOutput, SendMessageInput, SendMessageOutput,
+    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput, OneShotInput,
+    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
+    SendMessageInput, SendMessageOutput,
 };
 use std::sync::OnceLock;
 
@@ -26,7 +27,7 @@ pub struct Hank {
     install_handler: Option<fn()>,
     initialize_handler: Option<fn()>,
     message_handler: Option<fn(message: Message)>,
-    chat_command_handler: Option<fn(context: CommandContext)>,
+    chat_command_handler: Option<fn(context: CommandContext, message: Message)>,
 }
 
 impl Hank {
@@ -65,11 +66,14 @@ impl Hank {
         self.message_handler = Some(handler);
     }
 
-    pub fn chat_command_handler(&self) -> Option<fn(context: CommandContext)> {
+    pub fn chat_command_handler(&self) -> Option<fn(context: CommandContext, message: Message)> {
         self.chat_command_handler
     }
 
-    pub fn register_chat_command_handler(&mut self, handler: fn(context: CommandContext)) {
+    pub fn register_chat_command_handler(
+        &mut self,
+        handler: fn(context: CommandContext, message: Message),
+    ) {
         self.chat_command_handler = Some(handler);
     }
 
@@ -136,10 +140,17 @@ impl Hank {
 static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
-pub fn handle_chat_command(Prost(context): Prost<CommandContext>) -> FnResult<()> {
+pub fn handle_chat_command(
+    Prost(HandleChatCommandInput { context, message }): Prost<HandleChatCommandInput>,
+) -> FnResult<()> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
 
-    hank.chat_command_handler().map(|handler| handler(context));
+    hank.chat_command_handler().map(|handler| {
+        handler(
+            context.expect("context should exist"),
+            message.expect("message should exist"),
+        )
+    });
 
     Ok(())
 }
