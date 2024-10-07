@@ -1,4 +1,4 @@
-use extism_pdk::{host_fn, plugin_fn, FnResult, Prost};
+use extism_pdk::{host_fn, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
@@ -11,6 +11,9 @@ use hank_types::{
 };
 use serde::Deserialize;
 use std::sync::OnceLock;
+
+pub use extism_pdk::{plugin_fn, FnResult};
+pub use prost::Message as ProstMessage;
 
 #[host_fn]
 extern "ExtismHost" {
