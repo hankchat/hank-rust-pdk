@@ -6,7 +6,7 @@ homepage = "https://hank.chat"
 repository = "https://github.com/hankchat/hank-rust-pdk"
 readme = "README.md"
 keywords = ["hank", "chat", "bot", "chatbot", "pdk"]
-version = "0.1.20"
+version = "0.1.21"
 edition = "2021"
 
 [package.metadata.release]
