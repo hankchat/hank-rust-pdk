@@ -1,7 +1,7 @@
 use extism_pdk::{host_fn, plugin_fn, FnResult, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
-use hank_types::database::{PreparedStatement, Results};
+use hank_types::database::PreparedStatement;
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
 use hank_types::{
@@ -9,6 +9,7 @@ use hank_types::{
     LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput,
     ReloadPluginOutput, SendMessageInput, SendMessageOutput,
 };
+use serde::Deserialize;
 use std::sync::OnceLock;
 
 #[host_fn]
@@ -100,16 +101,20 @@ impl Hank {
         let _ = unsafe { react(Prost(input)) };
     }
 
-    // @TODO make this generic
-    pub fn db_query(statement: PreparedStatement) -> Results {
+    pub fn db_query<T: for<'a> Deserialize<'a>>(statement: PreparedStatement) -> Vec<T> {
         let input = DbQueryInput {
             prepared_statement: Some(statement),
         };
 
         let output = unsafe { db_query(Prost(input)) };
-        let Prost(output) = output.unwrap();
+        let Prost(DbQueryOutput { results }) = output.unwrap();
 
-        output.results.unwrap()
+        results
+            .unwrap()
+            .rows
+            .into_iter()
+            .map(|s| serde_json::from_str(&s).unwrap())
+            .collect()
     }
 
     pub fn cron(cronjob: CronJob) {

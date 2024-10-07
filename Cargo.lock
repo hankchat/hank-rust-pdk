@@ -123,6 +123,8 @@ dependencies = [
  "extism-pdk",
  "hank-types",
  "prost",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
