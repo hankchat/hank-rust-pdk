@@ -101,7 +101,15 @@ impl Hank {
         let _ = unsafe { react(Prost(input)) };
     }
 
-    pub fn db_query<T: for<'a> Deserialize<'a>>(statement: PreparedStatement) -> Vec<T> {
+    pub fn db_query(statement: PreparedStatement) {
+        let input = DbQueryInput {
+            prepared_statement: Some(statement),
+        };
+
+        let _ = unsafe { db_query(Prost(input)) };
+    }
+
+    pub fn db_fetch<T: for<'a> Deserialize<'a>>(statement: PreparedStatement) -> Vec<T> {
         let input = DbQueryInput {
             prepared_statement: Some(statement),
         };
