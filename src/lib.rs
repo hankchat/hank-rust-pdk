@@ -1,4 +1,4 @@
-use extism_pdk::{host_fn, info, plugin_fn, FnResult, Prost};
+use extism_pdk::{host_fn, plugin_fn, FnResult, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
@@ -113,10 +113,7 @@ impl Hank {
             .unwrap()
             .rows
             .into_iter()
-            .map(|s| {
-                info!("{}", &s);
-                serde_json::from_str(&s).unwrap()
-            })
+            .map(|s| serde_json::from_str(&s).unwrap())
             .collect()
     }
 
