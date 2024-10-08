@@ -2,6 +2,7 @@ use extism_pdk::{host_fn, Prost};
 use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
+use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
 use hank_types::{
@@ -155,9 +156,11 @@ impl Hank {
 
     // Escalated privileges necessary for use.
     pub fn load_plugin(
-        url: impl Into<String>,
+        wasm: impl Into<Wasm>,
     ) -> Result<(extism_manifest::Manifest, Metadata), extism_pdk::Error> {
-        let input = LoadPluginInput { url: url.into() };
+        let input = LoadPluginInput {
+            wasm: Some(wasm.into()),
+        };
 
         unsafe { load_plugin(Prost(input)) }.map(
             |Prost(LoadPluginOutput { metadata, manifest })| {
