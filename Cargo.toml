@@ -13,6 +13,7 @@ edition = "2021"
 pre-release-commit-message = "Release {{crate_name}} version {{version}}"
 
 [dependencies]
+extism-manifest = "1.6.0"
 extism-pdk = "1.2.1"
 hank-types = "0.1.0"
 prost = "0.13.2"
