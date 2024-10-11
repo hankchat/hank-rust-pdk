@@ -8,10 +8,12 @@ use hank_types::plugin::{
     Argument, Command, CommandContext, EscalatedPrivilege, Instruction, Metadata,
 };
 use hank_types::{
-    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput,
-    InstructPluginInput, InstructPluginOutput, LoadPluginInput, LoadPluginOutput, OneShotInput,
-    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
-    SendMessageInput, SendMessageOutput,
+    ChatCommandInput, ChatCommandOutput, ChatMessageInput, ChatMessageOutput, CronInput,
+    CronOutput, DbQueryInput, DbQueryOutput, GetMetadataInput, GetMetadataOutput, InitializeInput,
+    InitializeOutput, InstallInput, InstallOutput, InstructPluginInput, InstructPluginOutput,
+    LoadPluginInput, LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput,
+    ReloadPluginInput, ReloadPluginOutput, ScheduledJobInput, ScheduledJobOutput, SendMessageInput,
+    SendMessageOutput,
 };
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -133,6 +135,9 @@ impl Hank {
             .collect()
     }
 
+    // @TODO i never actually implemented the cron stuff properly..
+    // need to keep a map of cron functions like we do in ts
+    // cron(cron: String, job: fn());
     pub fn cron(cronjob: CronJob) {
         let input = CronInput {
             cron_job: Some(cronjob),
@@ -176,6 +181,7 @@ impl Hank {
         )
     }
 
+    // Escalated privileges necessary for use.
     pub fn instruct_plugin(instruction: Instruction) {
         let input = InstructPluginInput {
             instruction: Some(instruction),
@@ -189,8 +195,8 @@ static HANK: OnceLock<Hank> = OnceLock::new();
 
 #[plugin_fn]
 pub fn handle_chat_command(
-    Prost(HandleChatCommandInput { context, message }): Prost<HandleChatCommandInput>,
-) -> FnResult<()> {
+    Prost(ChatCommandInput { context, message }): Prost<ChatCommandInput>,
+) -> FnResult<Prost<ChatCommandOutput>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
 
     hank.chat_command_handler().map(|handler| {
@@ -200,42 +206,59 @@ pub fn handle_chat_command(
         )
     });
 
-    Ok(())
+    Ok(Prost(ChatCommandOutput::default()))
 }
 
 #[plugin_fn]
-pub fn handle_message(Prost(message): Prost<Message>) -> FnResult<()> {
+pub fn handle_chat_message(
+    Prost(ChatMessageInput { message }): Prost<ChatMessageInput>,
+) -> FnResult<Prost<ChatMessageOutput>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
 
-    hank.message_handler().map(|handler| handler(message));
+    hank.message_handler()
+        .map(|handler| handler(message.expect("message should exist")));
 
-    Ok(())
+    Ok(Prost(ChatMessageOutput::default()))
 }
 
 #[plugin_fn]
-pub fn get_metadata() -> FnResult<Prost<Metadata>> {
+pub fn handle_get_metadata(
+    Prost(_input): Prost<GetMetadataInput>,
+) -> FnResult<Prost<GetMetadataOutput>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
-    Ok(Prost(hank.metadata()))
+
+    Ok(Prost(GetMetadataOutput {
+        metadata: Some(hank.metadata()),
+    }))
 }
 
 #[plugin_fn]
-pub fn install() -> FnResult<()> {
+pub fn handle_install(Prost(_input): Prost<InstallInput>) -> FnResult<Prost<InstallOutput>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     if let Some(handler) = hank.install_handler() {
         handler();
     }
 
-    Ok(())
+    Ok(Prost(InstallOutput::default()))
 }
 
 #[plugin_fn]
-pub fn initialize() -> FnResult<()> {
+pub fn handle_initialize(
+    Prost(_input): Prost<InitializeInput>,
+) -> FnResult<Prost<InitializeOutput>> {
     let hank = HANK.get().expect("Plugin did not initialize global HANK");
     if let Some(handler) = hank.initialize_handler() {
         handler();
     }
 
-    Ok(())
+    Ok(Prost(InitializeOutput::default()))
+}
+
+#[plugin_fn]
+pub fn handle_scheduled_job(
+    Prost(input): Prost<ScheduledJobInput>,
+) -> FnResult<Prost<ScheduledJobOutput>> {
+    Ok(Prost(ScheduledJobOutput::default()))
 }
 
 /// Wrapper for Access Check shorthands.
