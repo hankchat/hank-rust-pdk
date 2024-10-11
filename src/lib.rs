@@ -4,11 +4,14 @@ use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
 use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
-use hank_types::plugin::{Argument, Command, CommandContext, EscalatedPrivilege, Metadata};
+use hank_types::plugin::{
+    Argument, Command, CommandContext, EscalatedPrivilege, Instruction, Metadata,
+};
 use hank_types::{
-    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput, LoadPluginInput,
-    LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput,
-    ReloadPluginOutput, SendMessageInput, SendMessageOutput,
+    CronInput, CronOutput, DbQueryInput, DbQueryOutput, HandleChatCommandInput,
+    InstructPluginInput, InstructPluginOutput, LoadPluginInput, LoadPluginOutput, OneShotInput,
+    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
+    SendMessageInput, SendMessageOutput,
 };
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -25,6 +28,7 @@ extern "ExtismHost" {
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
     pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
     pub fn load_plugin(input: Prost<LoadPluginInput>) -> Prost<LoadPluginOutput>;
+    pub fn instruct_plugin(input: Prost<InstructPluginInput>) -> Prost<InstructPluginOutput>;
 }
 
 #[derive(Default, Debug)]
@@ -170,6 +174,14 @@ impl Hank {
                 )
             },
         )
+    }
+
+    pub fn instruct_plugin(instruction: Instruction) {
+        let input = InstructPluginInput {
+            instruction: Some(instruction),
+        };
+
+        let _ = unsafe { instruct_plugin(Prost(input)) };
     }
 }
 
