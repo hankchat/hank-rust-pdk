@@ -13,7 +13,7 @@ use hank_types::{
     InitializeOutput, InstallInput, InstallOutput, InstructPluginInput, InstructPluginOutput,
     LoadPluginInput, LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput,
     ReloadPluginInput, ReloadPluginOutput, ScheduledJobInput, ScheduledJobOutput, SendMessageInput,
-    SendMessageOutput,
+    SendMessageOutput, UnloadPluginInput, UnloadPluginOutput,
 };
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -30,6 +30,7 @@ extern "ExtismHost" {
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
     pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
     pub fn load_plugin(input: Prost<LoadPluginInput>) -> Prost<LoadPluginOutput>;
+    pub fn unload_plugin(input: Prost<UnloadPluginInput>) -> Prost<UnloadPluginOutput>;
     pub fn instruct_plugin(input: Prost<InstructPluginInput>) -> Prost<InstructPluginOutput>;
 }
 
@@ -179,6 +180,15 @@ impl Hank {
                 )
             },
         )
+    }
+
+    // Escalated privileges necessary for use.
+    pub fn unload_plugin(plugin: impl Into<String>) {
+        let input = UnloadPluginInput {
+            plugin: plugin.into(),
+        };
+
+        let _ = unsafe { unload_plugin(Prost(input)) };
     }
 
     // Escalated privileges necessary for use.
