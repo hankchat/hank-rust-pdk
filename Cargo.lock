@@ -130,9 +130,9 @@ dependencies = [
 
 [[package]]
 name = "hank-types"
-version = "0.1.36"
+version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da981d3994ffae70cdbef2f64764de784c4c55d48c241e5d7a0bbd99f780c6e7"
+checksum = "4b79343288dc6bc0d9df3668093726362d1ce8003a10a31c4fcfcdfc870ccddf"
 dependencies = [
  "prost",
  "serde",
