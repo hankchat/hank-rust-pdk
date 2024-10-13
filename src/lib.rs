@@ -1,5 +1,4 @@
 use extism_pdk::{host_fn, Prost};
-use hank_types::access_check::{AccessCheck, AccessCheckChain};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
 use hank_types::load_plugin_input::Wasm;
@@ -279,25 +278,3 @@ pub fn handle_scheduled_job(
     // @TODO implement this
     Ok(Prost(ScheduledJobOutput::default()))
 }
-
-/// Wrapper for Access Check shorthands.
-#[derive(Default, Debug)]
-pub enum AccessChecks {
-    #[default]
-    None,
-    Array(Vec<AccessCheck>),
-    Single(AccessCheck),
-    Full(AccessCheckChain),
-}
-// access_checks: match value.access_checks {
-//     None => Option::None,
-//     Array(checks) => Some(AccessCheckChain {
-//         operator: AccessCheckOperator::Or.into(),
-//         checks,
-//     }),
-//     Single(check) => Some(AccessCheckChain {
-//         operator: AccessCheckOperator::Or.into(),
-//         checks: vec![check],
-//     }),
-//     Full(full) => Some(full),
-// },
