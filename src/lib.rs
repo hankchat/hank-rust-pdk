@@ -1,12 +1,10 @@
 use extism_pdk::{host_fn, Prost};
-use hank_types::access_check::{AccessCheck, AccessCheckChain, AccessCheckOperator};
+use hank_types::access_check::{AccessCheck, AccessCheckChain};
 use hank_types::cron::{CronJob, OneShotJob};
 use hank_types::database::PreparedStatement;
 use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
-use hank_types::plugin::{
-    Argument, Command, CommandContext, EscalatedPrivilege, Instruction, Metadata,
-};
+use hank_types::plugin::{CommandContext, Instruction, Metadata};
 use hank_types::{
     ChatCommandInput, ChatCommandOutput, ChatMessageInput, ChatMessageOutput, CronInput,
     CronOutput, DbQueryInput, DbQueryOutput, GetMetadataInput, GetMetadataOutput, InitializeInput,
@@ -18,7 +16,9 @@ use hank_types::{
 use serde::Deserialize;
 use std::sync::OnceLock;
 
-pub use extism_pdk::{plugin_fn, FnResult};
+pub use extism_pdk::{
+    debug, error, http, info, plugin_fn, warn, FnResult, HttpRequest, HttpResponse,
+};
 pub use prost::Message as ProstMessage;
 
 #[host_fn]
@@ -274,8 +274,9 @@ pub fn handle_initialize(
 
 #[plugin_fn]
 pub fn handle_scheduled_job(
-    Prost(input): Prost<ScheduledJobInput>,
+    Prost(_input): Prost<ScheduledJobInput>,
 ) -> FnResult<Prost<ScheduledJobOutput>> {
+    // @TODO implement this
     Ok(Prost(ScheduledJobOutput::default()))
 }
 
@@ -288,86 +289,15 @@ pub enum AccessChecks {
     Single(AccessCheck),
     Full(AccessCheckChain),
 }
-
-/// Wrapper for Metadata protobuf that's more user friendly.
-#[derive(Default, Debug)]
-pub struct PluginMetadata<'a> {
-    /// The plguins name.
-    pub name: &'a str,
-    /// A short description of the plugin.
-    pub description: &'a str,
-    /// A version string for the plugin. Should follow semver.
-    ///
-    /// @see: <https://semver.org/>
-    pub version: &'a str,
-    /// When true, a SQLite3 database will be created for the plugin.
-    /// @deprecated All plugins get a database by default now.
-    pub database: bool,
-    /// Access checks
-    ///
-    /// All functionality of this plugin can optionally be gated by accses checks.
-    pub access_checks: AccessChecks,
-    /// A secret escalation key that grants this plugin specific escalated
-    /// privileges.
-    pub escalation_key: Option<&'a str>,
-    /// A list of escalated privileges that this plugin requests to use.
-    pub escalated_privileges: Vec<EscalatedPrivilege>,
-    /// The author of the plugin.
-    pub author: &'a str,
-    /// Whether or not this plugin handles commands.
-    pub handles_commands: bool,
-    /// Whether or not this plugin handles messages.
-    pub handles_messages: bool,
-    /// Optionally override the plugin command name.
-    pub command_name: Option<&'a str>,
-    /// Optional aliases for the plugin command.
-    pub aliases: Vec<&'a str>,
-    /// Arguments for the plugin command.
-    pub arguments: Vec<Argument>,
-    /// Plugin subcommands.
-    pub subcommands: Vec<Command>,
-    /// Hosts that this plugin requests permissions to access via HTTP.
-    pub allowed_hosts: Vec<String>,
-    /// Pool size this plugin requests.
-    pub pool_size: Option<i32>,
-}
-
-impl From<PluginMetadata<'_>> for Metadata {
-    fn from(value: PluginMetadata) -> Self {
-        use AccessChecks::*;
-
-        Self {
-            name: value.name.into(),
-            description: value.description.into(),
-            version: value.version.into(),
-            database: false, // @deprecated
-            access_checks: match value.access_checks {
-                None => Option::None,
-                Array(checks) => Some(AccessCheckChain {
-                    operator: AccessCheckOperator::Or.into(),
-                    checks,
-                }),
-                Single(check) => Some(AccessCheckChain {
-                    operator: AccessCheckOperator::Or.into(),
-                    checks: vec![check],
-                }),
-                Full(full) => Some(full),
-            },
-            escalation_key: value.escalation_key.map(String::from),
-            escalated_privileges: value
-                .escalated_privileges
-                .into_iter()
-                .map(i32::from)
-                .collect(),
-            author: value.author.into(),
-            handles_commands: value.handles_commands,
-            handles_messages: value.handles_messages,
-            command_name: value.command_name.map(String::from),
-            aliases: value.aliases.into_iter().map(String::from).collect(),
-            arguments: value.arguments,
-            subcommands: value.subcommands,
-            allowed_hosts: value.allowed_hosts,
-            pool_size: value.pool_size,
-        }
-    }
-}
+// access_checks: match value.access_checks {
+//     None => Option::None,
+//     Array(checks) => Some(AccessCheckChain {
+//         operator: AccessCheckOperator::Or.into(),
+//         checks,
+//     }),
+//     Single(check) => Some(AccessCheckChain {
+//         operator: AccessCheckOperator::Or.into(),
+//         checks: vec![check],
+//     }),
+//     Full(full) => Some(full),
+// },
