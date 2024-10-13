@@ -104,6 +104,14 @@ impl Hank {
         let _ = unsafe { send_message(Prost(input)) };
     }
 
+    pub fn respond(response: String, message: Message) {
+        let response = Message {
+            content: response,
+            ..message
+        };
+        Self::send_message(response);
+    }
+
     pub fn react(reaction: Reaction) {
         let input = ReactInput {
             reaction: Some(reaction),
