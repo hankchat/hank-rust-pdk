@@ -133,7 +133,7 @@ impl Hank {
         };
 
         let output = unsafe { db_query(Prost(input)) };
-        let Prost(DbQueryOutput { results }) = output.unwrap();
+        let Prost(DbQueryOutput { results, .. }) = output.unwrap();
 
         results
             .unwrap()
@@ -180,7 +180,9 @@ impl Hank {
         };
 
         unsafe { load_plugin(Prost(input)) }.map(
-            |Prost(LoadPluginOutput { metadata, manifest })| {
+            |Prost(LoadPluginOutput {
+                 metadata, manifest, ..
+             })| {
                 (
                     serde_json::from_str(&manifest).expect("valid manifest"),
                     metadata.expect("ok result"),
