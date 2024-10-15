@@ -136,7 +136,7 @@ impl Hank {
         let Prost(DbQueryOutput { results, .. }) = output.unwrap();
 
         results
-            .unwrap()
+            .unwrap_or_default()
             .rows
             .into_iter()
             .map(|s| serde_json::from_str(&s).unwrap())
