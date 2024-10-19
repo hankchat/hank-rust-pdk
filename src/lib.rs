@@ -151,9 +151,12 @@ impl Hank {
         Self::send_message(response);
     }
 
-    pub fn react(reaction: Reaction) {
+    pub fn react(emoji: impl Into<String>, message: Message) {
         let input = ReactInput {
-            reaction: Some(reaction),
+            reaction: Some(Reaction {
+                emoji: emoji.into(),
+                message: Some(message),
+            }),
         };
 
         let _ = unsafe { react(Prost(input)) };
