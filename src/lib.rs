@@ -196,12 +196,12 @@ impl Hank {
         }
     }
 
-    pub fn cron(cron: String, job: fn()) {
+    pub fn cron(cron: &str, job: fn()) {
         let mut guard = HANK.write().unwrap();
         let hank = guard
             .as_mut()
             .expect("Plugin did not initialize global HANK");
-        hank.add_cron(cron, job);
+        hank.add_cron(cron.to_string(), job);
     }
 
     pub fn one_shot(duration: i32, job: fn()) {
