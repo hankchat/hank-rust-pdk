@@ -15,7 +15,7 @@ use hank_types::{
 };
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::{LazyLock, RwLock};
 
 pub use extism_pdk::{
     debug, error, http, info, plugin_fn, warn, FnResult, HttpRequest, HttpResponse,
@@ -98,7 +98,7 @@ impl Hank {
         }
     }
 
-    pub fn cron(&mut self, cron: String, job: fn()) {
+    pub(crate) fn add_cron(&mut self, cron: String, job: fn()) {
         let uuid = uuid::Uuid::new_v4();
 
         self.scheduled_jobs.insert(uuid.to_string(), job);
@@ -113,7 +113,7 @@ impl Hank {
         let _ = unsafe { crate::cron(Prost(input)) };
     }
 
-    pub fn one_shot(&mut self, duration: i32, job: fn()) {
+    pub(crate) fn add_one_shot(&mut self, duration: i32, job: fn()) {
         let uuid = uuid::Uuid::new_v4();
 
         self.scheduled_jobs.insert(uuid.to_string(), job);
@@ -129,8 +129,8 @@ impl Hank {
     }
 
     pub fn start(self) -> FnResult<()> {
-        HANK.set(self)
-            .expect("Plugin failed to initialize global HANK");
+        let mut hank = HANK.write().unwrap();
+        *hank = Some(self);
         Ok(())
     }
 
@@ -182,6 +182,22 @@ impl Hank {
             .collect()
     }
 
+    pub fn cron(cron: String, job: fn()) {
+        let mut guard = HANK.write().unwrap();
+        let hank = guard
+            .as_mut()
+            .expect("Plugin did not initialize global HANK");
+        hank.add_cron(cron, job);
+    }
+
+    pub fn one_shot(duration: i32, job: fn()) {
+        let mut guard = HANK.write().unwrap();
+        let hank = guard
+            .as_mut()
+            .expect("Plugin did not initialize global HANK");
+        hank.add_one_shot(duration, job);
+    }
+
     // Escalated privileges necessary for use.
     pub fn reload_plugin(plugin: impl Into<String>) {
         let input = ReloadPluginInput {
@@ -230,13 +246,16 @@ impl Hank {
     }
 }
 
-static HANK: OnceLock<Hank> = OnceLock::new();
+static HANK: LazyLock<RwLock<Option<Hank>>> = LazyLock::new(|| RwLock::new(None));
 
 #[plugin_fn]
 pub fn handle_chat_command(
     Prost(ChatCommandInput { context, message }): Prost<ChatCommandInput>,
 ) -> FnResult<Prost<ChatCommandOutput>> {
-    let hank = HANK.get().expect("Plugin did not initialize global HANK");
+    let guard = HANK.read().unwrap();
+    let hank = guard
+        .as_ref()
+        .expect("Plugin did not initialize global HANK");
 
     hank.chat_command_handler().map(|handler| {
         handler(
@@ -252,7 +271,10 @@ pub fn handle_chat_command(
 pub fn handle_chat_message(
     Prost(ChatMessageInput { message }): Prost<ChatMessageInput>,
 ) -> FnResult<Prost<ChatMessageOutput>> {
-    let hank = HANK.get().expect("Plugin did not initialize global HANK");
+    let guard = HANK.read().unwrap();
+    let hank = guard
+        .as_ref()
+        .expect("Plugin did not initialize global HANK");
 
     hank.chat_message_handler()
         .map(|handler| handler(message.expect("message should exist")));
@@ -264,7 +286,10 @@ pub fn handle_chat_message(
 pub fn handle_get_metadata(
     Prost(_input): Prost<GetMetadataInput>,
 ) -> FnResult<Prost<GetMetadataOutput>> {
-    let hank = HANK.get().expect("Plugin did not initialize global HANK");
+    let guard = HANK.read().unwrap();
+    let hank = guard
+        .as_ref()
+        .expect("Plugin did not initialize global HANK");
 
     Ok(Prost(GetMetadataOutput {
         metadata: Some(hank.metadata()),
@@ -273,7 +298,11 @@ pub fn handle_get_metadata(
 
 #[plugin_fn]
 pub fn handle_install(Prost(_input): Prost<InstallInput>) -> FnResult<Prost<InstallOutput>> {
-    let hank = HANK.get().expect("Plugin did not initialize global HANK");
+    let guard = HANK.read().unwrap();
+    let hank = guard
+        .as_ref()
+        .expect("Plugin did not initialize global HANK");
+
     if let Some(handler) = hank.install_handler() {
         handler();
     }
@@ -285,7 +314,11 @@ pub fn handle_install(Prost(_input): Prost<InstallInput>) -> FnResult<Prost<Inst
 pub fn handle_initialize(
     Prost(_input): Prost<InitializeInput>,
 ) -> FnResult<Prost<InitializeOutput>> {
-    let hank = HANK.get().expect("Plugin did not initialize global HANK");
+    let guard = HANK.read().unwrap();
+    let hank = guard
+        .as_ref()
+        .expect("Plugin did not initialize global HANK");
+
     if let Some(handler) = hank.initialize_handler() {
         handler();
     }
@@ -303,7 +336,10 @@ pub fn handle_scheduled_job(
             ScheduledJob::OneShotJob(oneshot) => oneshot.job,
         };
 
-        let hank = HANK.get().expect("Plugin did not initialize global HANK");
+        let guard = HANK.write().unwrap();
+        let hank = guard
+            .as_ref()
+            .expect("Plugin did not initialize global HANK");
         hank.scheduled_job_handler(job);
     }
     Ok(Prost(ScheduledJobOutput::default()))
