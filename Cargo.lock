@@ -135,7 +135,7 @@ dependencies = [
 
 [[package]]
 name = "hank-pdk"
-version = "0.1.39"
+version = "0.1.40"
 dependencies = [
  "extism-manifest",
  "extism-pdk",
