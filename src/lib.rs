@@ -190,12 +190,15 @@ impl Hank {
         if let Some(error) = error {
             Err(error)
         } else {
-            Ok(results
+            let results = results
                 .unwrap_or_default()
                 .rows
                 .into_iter()
-                .map(|s| serde_json::from_str(&s).unwrap())
-                .collect())
+                .map(|s| Ok::<T, serde_json::Error>(serde_json::from_str(&s)?))
+                .collect::<Result<_, _>>()
+                .map_err(|e| e.to_string())?;
+
+            Ok(results)
         }
     }
 
