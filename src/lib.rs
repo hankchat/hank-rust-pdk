@@ -1,6 +1,6 @@
 use extism_pdk::{host_fn, Prost};
 use hank_types::cron::{CronJob, OneShotJob};
-use hank_types::database::PreparedStatement;
+use hank_types::database::{PreparedStatement, Results};
 use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{CommandContext, Instruction, Metadata};
@@ -45,6 +45,7 @@ pub struct Hank {
     scheduled_jobs: HashMap<String, fn()>,
 }
 
+// @TODO error handling
 impl Hank {
     pub fn new(metadata: impl Into<Metadata>) -> Self {
         Self {
@@ -158,28 +159,41 @@ impl Hank {
         let _ = unsafe { react(Prost(input)) };
     }
 
-    pub fn db_query(statement: PreparedStatement) {
-        let input = DbQueryInput {
-            prepared_statement: Some(statement),
-        };
-
-        let _ = unsafe { db_query(Prost(input)) };
-    }
-
-    pub fn db_fetch<T: for<'a> Deserialize<'a>>(statement: PreparedStatement) -> Vec<T> {
+    pub fn db_query(statement: PreparedStatement) -> Result<Results, String> {
         let input = DbQueryInput {
             prepared_statement: Some(statement),
         };
 
         let output = unsafe { db_query(Prost(input)) };
-        let Prost(DbQueryOutput { results, .. }) = output.unwrap();
+        let Prost(DbQueryOutput { results, error }) = output.unwrap();
 
-        results
-            .unwrap_or_default()
-            .rows
-            .into_iter()
-            .map(|s| serde_json::from_str(&s).unwrap())
-            .collect()
+        if let Some(error) = error {
+            Err(error)
+        } else {
+            Ok(results.unwrap_or_default())
+        }
+    }
+
+    pub fn db_fetch<T: for<'a> Deserialize<'a>>(
+        statement: PreparedStatement,
+    ) -> Result<Vec<T>, String> {
+        let input = DbQueryInput {
+            prepared_statement: Some(statement),
+        };
+
+        let output = unsafe { db_query(Prost(input)) };
+        let Prost(DbQueryOutput { results, error }) = output.unwrap();
+
+        if let Some(error) = error {
+            Err(error)
+        } else {
+            Ok(results
+                .unwrap_or_default()
+                .rows
+                .into_iter()
+                .map(|s| serde_json::from_str(&s).unwrap())
+                .collect())
+        }
     }
 
     pub fn cron(cron: String, job: fn()) {
