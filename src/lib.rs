@@ -4,6 +4,7 @@ use hank_types::database::PreparedStatement;
 use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{CommandContext, Instruction, Metadata};
+use hank_types::scheduled_job_input::ScheduledJob;
 use hank_types::{
     ChatCommandInput, ChatCommandOutput, ChatMessageInput, ChatMessageOutput, CronInput,
     CronOutput, DbQueryInput, DbQueryOutput, GetMetadataInput, GetMetadataOutput, InitializeInput,
@@ -13,6 +14,7 @@ use hank_types::{
     SendMessageOutput, UnloadPluginInput, UnloadPluginOutput,
 };
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::sync::OnceLock;
 
 pub use extism_pdk::{
@@ -40,6 +42,7 @@ pub struct Hank {
     initialize_handler: Option<fn()>,
     chat_message_handler: Option<fn(message: Message)>,
     chat_command_handler: Option<fn(context: CommandContext, message: Message)>,
+    scheduled_jobs: HashMap<String, fn()>,
 }
 
 impl Hank {
@@ -87,6 +90,42 @@ impl Hank {
         handler: fn(context: CommandContext, message: Message),
     ) {
         self.chat_command_handler = Some(handler);
+    }
+
+    pub fn scheduled_job_handler(&self, uuid: String) {
+        if let Some(job) = self.scheduled_jobs.get(&uuid) {
+            job();
+        }
+    }
+
+    pub fn cron(&mut self, cron: String, job: fn()) {
+        let uuid = uuid::Uuid::new_v4();
+
+        self.scheduled_jobs.insert(uuid.to_string(), job);
+
+        let input = CronInput {
+            cron_job: Some(CronJob {
+                cron,
+                job: uuid.to_string(),
+            }),
+        };
+
+        let _ = unsafe { crate::cron(Prost(input)) };
+    }
+
+    pub fn one_shot(&mut self, duration: i32, job: fn()) {
+        let uuid = uuid::Uuid::new_v4();
+
+        self.scheduled_jobs.insert(uuid.to_string(), job);
+
+        let input = OneShotInput {
+            one_shot_job: Some(OneShotJob {
+                duration,
+                job: uuid.to_string(),
+            }),
+        };
+
+        let _ = unsafe { one_shot(Prost(input)) };
     }
 
     pub fn start(self) -> FnResult<()> {
@@ -141,25 +180,6 @@ impl Hank {
             .into_iter()
             .map(|s| serde_json::from_str(&s).unwrap())
             .collect()
-    }
-
-    // @TODO i never actually implemented the cron stuff properly..
-    // need to keep a map of cron functions like we do in ts
-    // cron(cron: String, job: fn());
-    pub fn cron(cronjob: CronJob) {
-        let input = CronInput {
-            cron_job: Some(cronjob),
-        };
-
-        let _ = unsafe { cron(Prost(input)) };
-    }
-
-    pub fn one_shot(oneshot: OneShotJob) {
-        let input = OneShotInput {
-            one_shot_job: Some(oneshot),
-        };
-
-        let _ = unsafe { one_shot(Prost(input)) };
     }
 
     // Escalated privileges necessary for use.
@@ -275,8 +295,16 @@ pub fn handle_initialize(
 
 #[plugin_fn]
 pub fn handle_scheduled_job(
-    Prost(_input): Prost<ScheduledJobInput>,
+    Prost(input): Prost<ScheduledJobInput>,
 ) -> FnResult<Prost<ScheduledJobOutput>> {
-    // @TODO implement this
+    if let Some(scheduled_job) = input.scheduled_job {
+        let job = match scheduled_job {
+            ScheduledJob::CronJob(cron) => cron.job,
+            ScheduledJob::OneShotJob(oneshot) => oneshot.job,
+        };
+
+        let hank = HANK.get().expect("Plugin did not initialize global HANK");
+        hank.scheduled_job_handler(job);
+    }
     Ok(Prost(ScheduledJobOutput::default()))
 }
