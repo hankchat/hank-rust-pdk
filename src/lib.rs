@@ -320,6 +320,7 @@ pub fn handle_initialize(
         .expect("Plugin did not initialize global HANK");
 
     if let Some(handler) = hank.initialize_handler() {
+        let _ = drop(guard);
         handler();
     }
 
