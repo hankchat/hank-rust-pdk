@@ -314,15 +314,17 @@ pub fn handle_install(Prost(_input): Prost<InstallInput>) -> FnResult<Prost<Inst
 pub fn handle_initialize(
     Prost(_input): Prost<InitializeInput>,
 ) -> FnResult<Prost<InitializeOutput>> {
-    let guard = HANK.read().unwrap();
-    let hank = guard
-        .as_ref()
-        .expect("Plugin did not initialize global HANK");
-
-    if let Some(handler) = hank.initialize_handler() {
-        let _ = drop(guard);
-        handler();
+    // This needs to be in its own scope to ensure the guard is dropped before we actually run the
+    // initialize handler. Otherwise the initialize handler can't mutate the global hank with the
+    // Hank::cron and Hank::one_shot functions.
+    {
+        let guard = HANK.read().unwrap();
+        let hank = guard
+            .as_ref()
+            .expect("Plugin did not initialize global HANK");
+        hank.initialize_handler()
     }
+    .map(|handler| handler());
 
     Ok(Prost(InitializeOutput::default()))
 }
