@@ -148,9 +148,9 @@ dependencies = [
 
 [[package]]
 name = "hank-types"
-version = "0.1.50"
+version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e9a6e7ae8e04ecd86e3ad45b0fc28f64333474a9315a802d0b334fa2e57a727"
+checksum = "bae1ddb21021e8dec38b3810ab27b85f263a99741d766320a21163508dcbb52c"
 dependencies = [
  "prost",
  "prost-types",

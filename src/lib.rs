@@ -242,9 +242,10 @@ impl Hank {
     }
 
     // Escalated privileges necessary for use.
-    pub fn unload_plugin(plugin: impl Into<String>) {
+    pub fn unload_plugin(plugin: impl Into<String>, cleanup: bool) {
         let input = UnloadPluginInput {
             plugin: plugin.into(),
+            cleanup,
         };
 
         let _ = unsafe { unload_plugin(Prost(input)) };
