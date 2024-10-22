@@ -7,11 +7,12 @@ use hank_types::plugin::{CommandContext, Instruction, Metadata};
 use hank_types::scheduled_job_input::ScheduledJob;
 use hank_types::{
     ChatCommandInput, ChatCommandOutput, ChatMessageInput, ChatMessageOutput, CronInput,
-    CronOutput, DbQueryInput, DbQueryOutput, GetMetadataInput, GetMetadataOutput, InitializeInput,
-    InitializeOutput, InstallInput, InstallOutput, InstructPluginInput, InstructPluginOutput,
-    LoadPluginInput, LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput,
-    ReloadPluginInput, ReloadPluginOutput, ScheduledJobInput, ScheduledJobOutput, SendMessageInput,
-    SendMessageOutput, UnloadPluginInput, UnloadPluginOutput,
+    CronOutput, DatetimeInput, DatetimeOutput, DbQueryInput, DbQueryOutput, GetMetadataInput,
+    GetMetadataOutput, InitializeInput, InitializeOutput, InstallInput, InstallOutput,
+    InstructPluginInput, InstructPluginOutput, LoadPluginInput, LoadPluginOutput, OneShotInput,
+    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
+    ScheduledJobInput, ScheduledJobOutput, SendMessageInput, SendMessageOutput, UnloadPluginInput,
+    UnloadPluginOutput,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -29,6 +30,7 @@ extern "ExtismHost" {
     pub fn db_query(input: Prost<DbQueryInput>) -> Prost<DbQueryOutput>;
     pub fn cron(input: Prost<CronInput>) -> Prost<CronOutput>;
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
+    pub fn datetime(input: Prost<DatetimeInput>) -> Prost<DatetimeOutput>;
     pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
     pub fn load_plugin(input: Prost<LoadPluginInput>) -> Prost<LoadPluginOutput>;
     pub fn unload_plugin(input: Prost<UnloadPluginInput>) -> Prost<UnloadPluginOutput>;
@@ -216,6 +218,16 @@ impl Hank {
             .as_mut()
             .expect("Plugin did not initialize global HANK");
         hank.add_one_shot(duration, job);
+    }
+
+    pub fn datetime() -> chrono::DateTime<chrono::Local> {
+        unsafe { datetime(Prost(DatetimeInput {})) }
+            .map(|Prost(DatetimeOutput { datetime })| {
+                datetime
+                    .parse::<chrono::DateTime<chrono::Local>>()
+                    .expect("expected valid datetime from hank")
+            })
+            .expect("expected valid datetime from hank")
     }
 
     // Escalated privileges necessary for use.
