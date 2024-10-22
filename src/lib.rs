@@ -220,11 +220,11 @@ impl Hank {
         hank.add_one_shot(duration, job);
     }
 
-    pub fn datetime() -> chrono::DateTime<chrono::Local> {
+    pub fn datetime() -> chrono::DateTime<chrono::FixedOffset> {
         unsafe { datetime(Prost(DatetimeInput {})) }
             .map(|Prost(DatetimeOutput { datetime })| {
                 datetime
-                    .parse::<chrono::DateTime<chrono::Local>>()
+                    .parse::<chrono::DateTime<chrono::FixedOffset>>()
                     .expect("expected valid datetime from hank")
             })
             .expect("expected valid datetime from hank")
