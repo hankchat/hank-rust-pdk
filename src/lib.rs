@@ -5,14 +5,15 @@ use hank_types::load_plugin_input::Wasm;
 use hank_types::message::{Message, Reaction};
 use hank_types::plugin::{CommandContext, Instruction, Metadata};
 use hank_types::scheduled_job_input::ScheduledJob;
+use hank_types::user::User;
 use hank_types::{
     ChatCommandInput, ChatCommandOutput, ChatMessageInput, ChatMessageOutput, CronInput,
     CronOutput, DatetimeInput, DatetimeOutput, DbQueryInput, DbQueryOutput, GetMetadataInput,
-    GetMetadataOutput, InitializeInput, InitializeOutput, InstallInput, InstallOutput,
-    InstructPluginInput, InstructPluginOutput, LoadPluginInput, LoadPluginOutput, OneShotInput,
-    OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput, ReloadPluginOutput,
-    ScheduledJobInput, ScheduledJobOutput, SendMessageInput, SendMessageOutput, UnloadPluginInput,
-    UnloadPluginOutput,
+    GetMetadataOutput, GetUserInput, GetUserOutput, InitializeInput, InitializeOutput,
+    InstallInput, InstallOutput, InstructPluginInput, InstructPluginOutput, LoadPluginInput,
+    LoadPluginOutput, OneShotInput, OneShotOutput, ReactInput, ReactOutput, ReloadPluginInput,
+    ReloadPluginOutput, ScheduledJobInput, ScheduledJobOutput, SendMessageInput, SendMessageOutput,
+    UnloadPluginInput, UnloadPluginOutput,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -31,6 +32,7 @@ extern "ExtismHost" {
     pub fn cron(input: Prost<CronInput>) -> Prost<CronOutput>;
     pub fn one_shot(input: Prost<OneShotInput>) -> Prost<OneShotOutput>;
     pub fn datetime(input: Prost<DatetimeInput>) -> Prost<DatetimeOutput>;
+    pub fn get_user(input: Prost<GetUserInput>) -> Prost<GetUserOutput>;
     pub fn reload_plugin(input: Prost<ReloadPluginInput>) -> Prost<ReloadPluginOutput>;
     pub fn load_plugin(input: Prost<LoadPluginInput>) -> Prost<LoadPluginOutput>;
     pub fn unload_plugin(input: Prost<UnloadPluginInput>) -> Prost<UnloadPluginOutput>;
@@ -228,6 +230,17 @@ impl Hank {
                     .expect("expected valid datetime from hank")
             })
             .expect("expected valid datetime from hank")
+    }
+
+    pub fn get_user(user_id: String) -> Result<Option<User>, String> {
+        let Prost(GetUserOutput { user, error }) =
+            unsafe { get_user(Prost(GetUserInput { id: user_id })) }.unwrap();
+
+        if let Some(error) = error {
+            Err(error)
+        } else {
+            Ok(user)
+        }
     }
 
     // Escalated privileges necessary for use.
